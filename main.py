@@ -222,7 +222,7 @@ async def health_check():
         "status": "healthy",
         "api_key_configured": bool(HEYGEN_API_KEY),
         "service_initialized": bool(service),
-        "template_id": template_id,
+        "template_id": TEMPLATE_ID,
         "port": PORT,
         "platform": "Render",
         "timestamp": datetime.now().isoformat()
