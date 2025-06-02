@@ -39,8 +39,7 @@ class VideoGenerationResponse(BaseModel):
     estimated_time: Optional[str] = None
 
 class VideoRetrievalRequest(BaseModel):
-    request_id: Optional[str] = None
-    video_id: Optional[str] = None
+    video_id: str
 
 class VideoRetrievalResponse(BaseModel):
     success: bool
@@ -287,7 +286,7 @@ async def generate_video(request: VideoGenerationRequest):
 
 @app.post("/retrieve", response_model=VideoRetrievalResponse, tags=["Video Retrieval"])
 async def retrieve_video(request: VideoRetrievalRequest):
-    """Retrieve video status and details"""
+    """Retrieve video status and details using video_id"""
     
     service = get_heygen_service()
     if not service:
@@ -296,42 +295,20 @@ async def retrieve_video(request: VideoRetrievalRequest):
             detail="Service not configured. Please set HEYGEN_API_KEY environment variable."
         )
     
-    video_id = None
-    request_id = request.request_id
-    
-    # Determine video_id from request_id or direct video_id
-    if request.request_id:
-        if request.request_id in video_requests_db:
-            video_id = video_requests_db[request.request_id]["video_id"]
-        else:
-            raise HTTPException(status_code=404, detail="Request ID not found")
-    elif request.video_id:
-        video_id = request.video_id
-        # Try to find corresponding request_id
-        for rid, data in video_requests_db.items():
-            if data["video_id"] == video_id:
-                request_id = rid
-                break
-    else:
-        raise HTTPException(status_code=400, detail="Either request_id or video_id must be provided")
+    video_id = request.video_id
     
     try:
-        # Get video status from HeyGen
+        # Get video status from HeyGen directly
         result = service.get_video_status(video_id)
         
         if "data" in result and "status" in result["data"]:
             data = result["data"]
             status = data["status"]
             
-            # Update local storage
-            if request_id and request_id in video_requests_db:
-                video_requests_db[request_id]["status"] = status
-                video_requests_db[request_id]["last_checked"] = datetime.now().isoformat()
-            
             response_data = {
                 "success": True,
                 "message": f"Video status: {status}",
-                "request_id": request_id,
+                "request_id": None,
                 "video_id": video_id,
                 "status": status
             }
@@ -348,7 +325,7 @@ async def retrieve_video(request: VideoRetrievalRequest):
             elif status == "failed":
                 response_data["message"] = f"Video generation failed: {data.get('error', 'Unknown error')}"
             
-            logger.info(f"Video status retrieved on Render: video_id={video_id}, status={status}")
+            logger.info(f"Video status retrieved: video_id={video_id}, status={status}")
             return VideoRetrievalResponse(**response_data)
             
         else:
@@ -363,7 +340,7 @@ async def retrieve_video(request: VideoRetrievalRequest):
     except Exception as e:
         logger.error(f"Video retrieval failed: {e}")
         raise HTTPException(status_code=500, detail=f"Video retrieval failed: {str(e)}")
-
+        
 @app.get("/requests", tags=["Management"])
 async def list_requests():
     """List all video requests (for debugging/monitoring)"""
