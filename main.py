@@ -320,7 +320,7 @@ async def retrieve_video(request: VideoRetrievalRequest):
                     "caption_url": data.get("caption_url"),
                     "thumbnail_url": data.get("thumbnail_url"),
                     "duration": data.get("duration"),
-                    "created_at": data.get("created_at")
+                    "created_at": str(data.get("created_at")) if data.get("created_at") else None
                 })
             elif status == "failed":
                 response_data["message"] = f"Video generation failed: {data.get('error', 'Unknown error')}"
