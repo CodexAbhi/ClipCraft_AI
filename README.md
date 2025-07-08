@@ -197,4 +197,3 @@ MIT License — free to use, build on, and improve.
 * [HeyGen API](https://www.heygen.com/)
 * [Streamlit](https://streamlit.io/)
 * [FastAPI](https://fastapi.tiangolo.com/)
-* [python-pptx](https://python-pptx.readthedocs.io/) (for other projects)
